@@ -17,11 +17,13 @@
 # limitations under the License.
 #
 
+install_type = node['minecraft']['install_type']
+
 include_recipe "java::#{node['java']['install_flavor']}"
 include_recipe 'runit'
 include_recipe 'minecraft::user'
 
-jar_name = minecraft_file(node['minecraft']['url'])
+jar_name = minecraft_file(node['minecraft'][install_type]['url'])
 
 directory node['minecraft']['install_dir'] do
   recursive true
@@ -32,16 +34,34 @@ directory node['minecraft']['install_dir'] do
 end
 
 remote_file "#{node['minecraft']['install_dir']}/#{jar_name}" do
-  source node['minecraft']['url']
-  checksum node['minecraft']['checksum']
+  source node['minecraft'][install_type]['url']
+  checksum node['minecraft'][install_type]['checksum']
   owner node['minecraft']['user']
   group node['minecraft']['group']
   mode 0644
   action :create_if_missing
 end
 
-include_recipe 'minecraft::service'
+execute 'create launchwrapper directory' do
+  command "mkdir -p #{File.join(node['minecraft']['install_dir'], 'libraries', File.dirname(node['minecraft'][install_type]['launchwrapper']['path']))}"
+  user node['minecraft']['user']
+  group node['minecraft']['group']
+  only_if { node['minecraft'][install_type]['launchwrapper']['path'] }
+  not_if { File.exist? File.join(node['minecraft']['install_dir'], 'libraries', File.dirname(node['minecraft'][install_type]['launchwrapper']['path'])) }
+end
+
+remote_file File.join(node['minecraft']['install_dir'], 'libraries', node['minecraft'][install_type]['launchwrapper']['path']) do
+  source "https://libraries.minecraft.net/#{node['minecraft'][install_type]['launchwrapper']['path']}"
+  checksum node['minecraft'][install_type]['launchwrapper']['checksum']
+  owner node['minecraft']['user']
+  group node['minecraft']['group']
+  mode 0644
+  not_if { node['minecraft'][install_type]['launchwrapper']['path'].empty? }
+  action :create_if_missing
+end
+
 include_recipe "minecraft::#{node['minecraft']['install_type']}"
+include_recipe 'minecraft::service'
 
 template "#{node['minecraft']['install_dir']}/server.properties" do
   owner node['minecraft']['user']

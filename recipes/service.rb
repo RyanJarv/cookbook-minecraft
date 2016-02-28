@@ -18,8 +18,14 @@
 # limitations under the License.
 #
 
+install_type = node['minecraft']['install_type']
+
+jar_name = (node['minecraft']['install_type'] == 'ftb') ?
+    node['minecraft']['ftb']['jarfile'] : minecraft_file(node['minecraft']['url'])
+
 case node['minecraft']['init_style']
-when 'runit'
+  when 'runit'
+
   runit_service 'minecraft' do
     options({
       :install_dir => node['minecraft']['install_dir'],
@@ -28,9 +34,9 @@ when 'runit'
       :prefer_ipv4 => node['minecraft']['prefer_ipv4'],
       :user        => node['minecraft']['user'],
       :group       => node['minecraft']['group'],
-      :java_opts   => node['minecraft']['java-options'],
-      :server_opts => node['minecraft']['server_opts'],
-      :jar_name    => minecraft_file(node['minecraft']['url'])
+      :java_opts   => node['minecraft']['java-options'] || node['minecraft'][install_type]['java-options'],
+      :server_opts => node['minecraft']['server_opts'] || node['minecraft'][install_type]['server_opts'],
+      :jar_name    => jar_name
     }.merge(params))
     action [:enable, :start]
   end
