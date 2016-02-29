@@ -21,7 +21,7 @@
 install_type = node['minecraft']['install_type']
 
 jar_name = (node['minecraft']['install_type'] == 'ftb') ?
-    node['minecraft']['ftb']['jarfile'] : minecraft_file(node['minecraft']['url'])
+    node['minecraft']['ftb']['jarfile'] : minecraft_file(node['minecraft'][install_type]['url'])
 
 case node['minecraft']['init_style']
   when 'runit'
